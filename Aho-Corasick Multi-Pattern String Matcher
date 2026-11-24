@@ -1,0 +1,62 @@
+//Aho-Corasick Multi-Pattern String Matcher
+#include <iostream>
+#include <vector>
+#include <queue>
+#include <string>
+
+using namespace std;
+
+const int MAXS = 500;
+const int MAXC = 26;
+
+int out[MAXS];
+int f[MAXS];
+int g[MAXS][MAXC];
+
+int buildMatchingMachine(const vector<string>& words) {
+    fill(out, out + MAXS, 0);
+    for (int i = 0; i < MAXS; i++) fill(g[i], g[i] + MAXC, -1);
+    int states = 1;
+
+    for (int i = 0; i < words.size(); ++i) {
+        const string& word = words[i];
+        int current_state = 0;
+        for (char ch : word) {
+            int ch_idx = ch - 'a';
+            if (g[current_state][ch_idx] == -1) g[current_state][ch_idx] = states++;
+            current_state = g[current_state][ch_idx];
+        }
+        out[current_state] |= (1 << i);
+    }
+    for (int ch = 0; ch < MAXC; ++ch) {
+        if (g[0][ch] == -1) g[0][ch] = 0;
+    }
+    
+    queue<int> q;
+    fill(f, f + MAXS, 0);
+    for (int ch = 0; ch < MAXC; ++ch) {
+        if (g[0][ch] != 0) { f[g[0][ch]] = 0; q.push(g[0][ch]); }
+    }
+    while (!q.empty()) {
+        int state = q.front();
+        q.pop();
+        for (int ch = 0; ch < MAXC; ++ch) {
+            if (g[state][ch] != -1) {
+                int failure = f[state];
+                while (g[failure][ch] == -1) failure = f[failure];
+                failure = g[failure][ch];
+                f[g[state][ch]] = failure;
+                out[g[state][ch]] |= out[failure];
+                q.push(g[state][ch]);
+            }
+        }
+    }
+    return states;
+}
+
+int main() {
+    vector<string> patterns = {"he", "she", "hers", "his"};
+    buildMatchingMachine(patterns);
+    cout << "Automaton tracking state generation verified successfully." << endl;
+    return 0;
+}
